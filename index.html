@@ -1,22 +1,138 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!DOCTYPE html>
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<html>
+	<head>
+		<title>Analytics for Fun</title>
+		<link rel="stylesheet" href="styles.css">
 
-    <title>Hello, world!</title>
-  </head>
-  <body>
-    <h1>Hello, world!</h1>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 
-    <!-- Optional JavaScript -->
-    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-  </body>
+		<script src="../Analytics/tracking_code.js"></script>
+
+		<script>
+		function summarizeClick(){
+		    document.getElementById("submit-text").value = "Summarizing ... please wait 1-2 mins";	   
+		}
+
+		function moveBar(){
+		      var elem = document.getElementById("progressBar");
+		      var width = 1;
+		      var interval = setInterval(frame, 10);
+		      var btn = document.getElementById("summarize-button");
+		      function frame(){
+			  if(width >= 100){
+			      //clearInterval(interval);
+			      width = 0;
+			  } else {
+			      width++;
+			      elem.style.width = width + '%';
+			  }
+
+			  //here, this function needs to know when the output text as been returned to the screen.
+			  if(btn.disabled == false){
+			    clearInterval(interval);
+			    elem.style.width = '0%';
+			  }   
+			
+		      }
+		}
+		</script>
+
+
+		<script>
+		  $(document).ready(function(){
+		    $("#navigation-bar").load("navigation.html");
+		  });
+		</script>
+
+			
+		<script>
+		function sendInputText(){
+
+		  document.getElementById("summarize-button").disabled = true;
+
+		  var inputText = document.getElementById("input-textbox").value;
+		  var xhttp = new XMLHttpRequest();
+		  var response;
+		  xhttp.onreadystatechange = function(){
+		    if(this.readyState == 4 && this.status == 200){
+		      response = JSON.parse(this.responseText);
+		      document.getElementById("output-textbox").value = response["summary"];
+		      document.getElementById("summarize-button").disabled = false;
+		      barplot(response["wordCounts"], "word-count-canvas");
+		    }
+		  };
+
+
+		  var data = {};
+		  data["inputText"] = inputText;
+
+		  xhttp.open("POST", "summarize.php", true);
+		  xhttp.setRequestHeader("Content-type", "application/json;charset=UTF-8");
+		  xhttp.send(JSON.stringify(data));
+
+		}
+		</script>
+	
+	</head>
+
+	<body>
+		<div id="navigation-bar" class="topnav">
+		<!-- jquery/ajax loaded contents from navigation.html -->
+		</div>
+
+		<div id="header"><strong>Analyze Text Data</strong></div>
+
+		<div id="intro">
+		<p>This is a lightweight tool that performs extractive text summarization. First, the input text is split into sentences. Next, each sentence is encoded into a sentence-vector using text-embedding methods. Then, the sentences are used to create a graph with sentences as nodes. Finally, graph clustering algorithms act on the graph to rank the most important sentences. The output summary is a subset of sentences from the original input text.</p> 
+		<p><strong>Notes of Use</strong></p>
+		<ul>
+		<li>Summarization can take from a few seconds to 1 or 2 minutes, depending on how large the input text is.</li>
+		<li>Try to summarize text that contains 200 - 1000 words. As of now, the model is being powered by a relatively weak server until we can upgrade it. This will get results in a reasonable amount of time.</li>
+		<li>Below is a prepopulated body of text taken from my first scientific publication. <strong>Model is still in testing phase!</strong></li>
+		<li>If it fails try to make sure the text you are copy/pasting into the input-text-box doesn't contain too much junk!</li>
+		<li>Longer input-texts will take longer to sumarize. This model is running on a small server so don't expect top performance on large data sets!</li>
+		</ul>
+		</div>
+
+		<div id="progressBarContainer"> 
+		  <div id="progressBar"></div>
+		</div>
+
+		<div id="wrapper">
+		  <div id="INPUT-TEXT-BOX-COLUMN">
+		      <textarea id="input-textbox" name="inputText">Gene regulatory networks are largely responsible for cellular decision-making. These networks sense diverse external signals and respond by adjusting gene expression, enabling cells to reach environment-dependent decisions crucial for their survival or reproduction. However, information-carrying signals may arrive at variable times. Besides the intrinsic strength of these signals, their arrival time (timing) may also carry information about the environment and can influence cellular decision-making in ways that are poorly understood. For example, it is unclear how the timing of individual phage infections affects the lysis-lysogeny decision of bacteriophage λ despite variable infection times being likely in the wild and even in laboratory conditions. In this work, we combine mathematical modeling with experimentation to address this question. We develop an experimentally testable theory, which reveals that late-infecting phages contribute less to cellular decision-making. This implies that infection delays lower the probability of lysogeny compared to simultaneous infections. Furthermore, we show that infection delays reduce lysogenization by providing insufficient CII for threshold crossing during the critical decision-making period. We find evidence for a cutoff time after which subsequent infections cannot influence the cellular decision. We derive an intuitive formula that approximates the probability of lysogeny for variable infection times by a time-weighted average of probabilities for simultaneous infections. We validate these theoretical predictions experimentally. Similar concepts and simplifying modeling approaches may help elucidate the mechanisms underlying other cellular decisions.</textarea>
+		    <div>
+		      <button id="summarize-button" onclick="sendInputText();moveBar()">Summarize Input</button>
+		    </div>
+		  </div>
+
+		  <div id="OUTPUT-TEXT-BOX-COLUMN">
+		    <textarea id="output-textbox">Your summary will appear here.</textarea>
+		  </div>
+		</div>
+
+
+		<div id="word-count-wrapper">
+		<canvas id="word-count-canvas"></canvas>
+		</div>
+
+
+		<div class="width-span-div">
+		  <p><strong>Abstractive Text Summarization</strong> comming soon!
+		  </p>
+		</div>	
+
+		<div id="conclusion">
+		<p>Hope you found this useful! Intuitively, this algorithm works because it is able to select sentences that are the most semantically connected with the rest of the input-text document. This method is <strong>extractive</strong>, but more recent methods attempt to rewrite the summary from scratch! Expect to see an <strong>abstractive</strong> summarization model soon!</p>
+		</div>
+
+	</body>
+
+
+	<script src="barchart.js"></script>
+
+
 </html>
+
